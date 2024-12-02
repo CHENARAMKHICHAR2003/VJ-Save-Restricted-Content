@@ -1,30 +1,31 @@
-import pyrogram
-from pyrogram import Client, filters
-from pyrogram.errors import UserAlreadyParticipant, InviteHashExpired, UsernameNotOccupied
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
-import time
 import os
 import threading
+import time
 from os import environ
+from pyrogram import Client, filters
+from pyrogram.errors import UserAlreadyParticipant, InviteHashExpired
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 # Bot Configuration
 bot_token = environ.get("TOKEN", "") 
 api_hash = environ.get("HASH", "4956e23833905463efb588eb806f9804") 
 api_id = int(environ.get("ID", "24894984"))
-bot = Client("mybot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 
-# String Session Setup
+bot = Client("mybot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
 ss = environ.get("STRING", "")
-if ss:
-    acc = Client("myacc", api_id=api_id, api_hash=api_hash, session_string=ss)
+acc = Client("myacc", api_id=api_id, api_hash=api_hash, session_string=ss) if ss else None
+if acc:
     acc.start()
-else:
-    acc = None
+
+
+# Progress Writer
+def progress(current, total, message, type_):
+    with open(f'{message.id}{type_}status.txt', "w") as file:
+        file.write(f"{current * 100 / total:.1f}%")
 
 
 # Download Status Function
-def downstatus(statusfile, message):
+def download_status(statusfile, message):
     while not os.path.exists(statusfile):
         time.sleep(3)
 
@@ -32,14 +33,14 @@ def downstatus(statusfile, message):
         with open(statusfile, "r") as file:
             txt = file.read()
         try:
-            bot.edit_message_text(message.chat.id, message.id, f"__Downloaded__ : **{txt}**")
+            bot.edit_message_text(message.chat.id, message.id, f"__Downloaded__: **{txt}**")
             time.sleep(10)
         except:
             time.sleep(5)
 
 
 # Upload Status Function
-def upstatus(statusfile, message):
+def upload_status(statusfile, message):
     while not os.path.exists(statusfile):
         time.sleep(3)
 
@@ -47,27 +48,190 @@ def upstatus(statusfile, message):
         with open(statusfile, "r") as file:
             txt = file.read()
         try:
-            bot.edit_message_text(message.chat.id, message.id, f"__Uploaded__ : **{txt}**")
+            bot.edit_message_text(message.chat.id, message.id, f"__Uploaded__: **{txt}**")
             time.sleep(10)
         except:
             time.sleep(5)
 
 
-# Progress Writer Function
-def progress(current, total, message, type):
-    with open(f'{message.id}{type}status.txt', "w") as file:
-        file.write(f"{current * 100 / total:.1f}%")
+# Handle Private Messages
+def handle_private(message, chatid, msgid):
+    msg = acc.get_messages(chatid, msgid)
+    msg_type = get_message_type(msg)
+
+    if msg_type == "Text":
+        bot.send_message(
+            message.chat.id, msg.text, entities=msg.entities, reply_to_message_id=message.id
+        )
+        return
+
+    smsg = bot.send_message(
+        message.chat.id, "__Downloading__", reply_to_message_id=message.id
+    )
+    dosta = threading.Thread(
+        target=lambda: download_status(f'{message.id}downstatus.txt', smsg), daemon=True
+    )
+    dosta.start()
+
+    file = acc.download_media(msg, progress=progress, progress_args=[message, "down"])
+    os.remove(f'{message.id}downstatus.txt')
+
+    upsta = threading.Thread(
+        target=lambda: upload_status(f'{message.id}upstatus.txt', smsg), daemon=True
+    )
+    upsta.start()
+
+    thumb = None
+    if msg_type == "Document":
+        try:
+            thumb = acc.download_media(msg.document.thumbs[0].file_id)
+        except:
+            thumb = None
+
+        bot.send_document(
+            message.chat.id,
+            file,
+            thumb=thumb,
+            caption=msg.caption,
+            caption_entities=msg.caption_entities,
+            reply_to_message_id=message.id,
+            progress=progress,
+            progress_args=[message, "up"],
+        )
+
+    elif msg_type == "Video":
+        try:
+            thumb = acc.download_media(msg.video.thumbs[0].file_id)
+        except:
+            thumb = None
+
+        bot.send_video(
+            message.chat.id,
+            file,
+            duration=msg.video.duration,
+            width=msg.video.width,
+            height=msg.video.height,
+            thumb=thumb,
+            caption=msg.caption,
+            caption_entities=msg.caption_entities,
+            reply_to_message_id=message.id,
+            progress=progress,
+            progress_args=[message, "up"],
+        )
+
+    elif msg_type == "Animation":
+        bot.send_animation(message.chat.id, file, reply_to_message_id=message.id)
+
+    elif msg_type == "Sticker":
+        bot.send_sticker(message.chat.id, file, reply_to_message_id=message.id)
+
+    elif msg_type == "Voice":
+        bot.send_voice(
+            message.chat.id,
+            file,
+            caption=msg.caption,
+            caption_entities=msg.caption_entities,
+            reply_to_message_id=message.id,
+            progress=progress,
+            progress_args=[message, "up"],
+        )
+
+    elif msg_type == "Audio":
+        try:
+            thumb = acc.download_media(msg.audio.thumbs[0].file_id)
+        except:
+            thumb = None
+
+        bot.send_audio(
+            message.chat.id,
+            file,
+            caption=msg.caption,
+            caption_entities=msg.caption_entities,
+            reply_to_message_id=message.id,
+            progress=progress,
+            progress_args=[message, "up"],
+        )
+
+    elif msg_type == "Photo":
+        bot.send_photo(
+            message.chat.id,
+            file,
+            caption=msg.caption,
+            caption_entities=msg.caption_entities,
+            reply_to_message_id=message.id,
+        )
+
+    # Cleanup
+    if thumb:
+        os.remove(thumb)
+    os.remove(file)
+    if os.path.exists(f'{message.id}upstatus.txt'):
+        os.remove(f'{message.id}upstatus.txt')
+    bot.delete_messages(message.chat.id, [smsg.id])
+
+
+# Get Message Type
+def get_message_type(msg):
+    try:
+        msg.document.file_id
+        return "Document"
+    except:
+        pass
+
+    try:
+        msg.video.file_id
+        return "Video"
+    except:
+        pass
+
+    try:
+        msg.animation.file_id
+        return "Animation"
+    except:
+        pass
+
+    try:
+        msg.sticker.file_id
+        return "Sticker"
+    except:
+        pass
+
+    try:
+        msg.voice.file_id
+        return "Voice"
+    except:
+        pass
+
+    try:
+        msg.audio.file_id
+        return "Audio"
+    except:
+        pass
+
+    try:
+        msg.photo.file_id
+        return "Photo"
+    except:
+        pass
+
+    try:
+        msg.text
+        return "Text"
+    except:
+        pass
+
+    return "Unknown"
 
 
 # Start Command
 @bot.on_message(filters.command(["start"]))
-def send_start(client: pyrogram.Client, message: pyrogram.types.Message):
+def send_start(client, message):
     bot.send_message(
         message.chat.id,
         f"**__👋 Hi {message.from_user.mention}!__**\n"
         "**I am Save Restricted Bot. I can help you save restricted content by its post link.**\n\n{USAGE}",
         reply_markup=InlineKeyboardMarkup(
-            [[InlineKeyboardButton("🌐 Update Channel", url="https://t.me/VJ_Botz")]]
+            [[InlineKeyboardButton("🌐 Update Channel", url="https://t.me/TARGETALLCOURSE")]]
         ),
         reply_to_message_id=message.id
     )
@@ -75,7 +239,7 @@ def send_start(client: pyrogram.Client, message: pyrogram.types.Message):
 
 # Save Command
 @bot.on_message(filters.text)
-def save(client: pyrogram.Client, message: pyrogram.types.Message):
+def save(client, message):
     print(message.text)
 
     # Joining Chats
@@ -114,43 +278,6 @@ def save(client: pyrogram.Client, message: pyrogram.types.Message):
                 bot.send_message(message.chat.id, f"**Error** : __{e}__", reply_to_message_id=message.id)
 
             time.sleep(3)
-
-
-# Handle Private Messages
-def handle_private(message: pyrogram.types.Message, chat_id, msg_id):
-    msg = acc.get_messages(chat_id, msg_id)
-    msg_type = get_message_type(msg)
-
-    if msg_type == "Text":
-        bot.send_message(message.chat.id, msg.text, entities=msg.entities, reply_to_message_id=message.id)
-        return
-
-    smsg = bot.send_message(message.chat.id, "__Downloading__", reply_to_message_id=message.id)
-    threading.Thread(target=downstatus, args=(f'{message.id}downstatus.txt', smsg), daemon=True).start()
-    file = acc.download_media(msg, progress=progress, progress_args=[message, "down"])
-    os.remove(f'{message.id}downstatus.txt')
-
-    threading.Thread(target=upstatus, args=(f'{message.id}upstatus.txt', smsg), daemon=True).start()
-
-    if msg_type == "Document":
-        bot.send_document(message.chat.id, file, caption=msg.caption, reply_to_message_id=message.id)
-    elif msg_type == "Photo":
-        bot.send_photo(message.chat.id, file, caption=msg.caption, reply_to_message_id=message.id)
-
-    os.remove(file)
-    os.remove(f'{message.id}upstatus.txt')
-    bot.delete_messages(message.chat.id, [smsg.id])
-
-
-# Get Message Type
-def get_message_type(msg: pyrogram.types.Message):
-    if msg.document:
-        return "Document"
-    if msg.photo:
-        return "Photo"
-    if msg.text:
-        return "Text"
-    return "Unknown"
 
 
 # Usage Instructions
