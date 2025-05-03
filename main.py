@@ -257,29 +257,28 @@ def get_message_type(msg):
 @bot.on_message(filters.command(["start"]))
 async def send_start(client, message):
     await bot.send_message(
-        message.chat.id,
-        f"**👋 Hi {message.from_user.mention}, CHOUDHARY Ji!**\n\n"
-"**I am Save Restricted Bot, I can send you restricted content by its post link.**\n\n"
-"🔹 **FOR PUBLIC CHATS**\n"
-"Just send post(s) link.\n\n"
-"🔹 **FOR PRIVATE CHATS**\n"
-"First send invite link of the chat (unnecessary if the account of string session is already a member of the chat),\n"
-"then send post(s) link.\n\n"
-"🔹 **FOR BOT CHATS**\n"
-"Send link with '/b/', bot's username and message id. You might want to install some unofficial clients to get the ID like below:\n\n"
-"Example: `https://t.me/b/botusername/4321`\n\n"
-"🔹 **MULTI POSTS**\n"
-"Send public/private post links as explained above with the format `from - to` to send multiple messages, like below:\n\n"
-"`https://t.me/xxxx/1001-1010`\n\n"
-"`https://t.me/c/xxxx/101-120`\n\n"
-"Note: Spaces in between don't matter.\n\n"
-"If you have any queries, feel free to ask!"
-        reply_markup=InlineKeyboardMarkup(
-            [[InlineKeyboardButton("🌐 Update Channel", url="https://t.me/TARGETALLCOURSE")]]
-        ),
-        reply_to_message_id=message.id
-    )
-
+    message.chat.id,
+    f"**👋 Hi {message.from_user.mention}, CHOUDHARY Ji!**\n\n"
+    "**I am Save Restricted Bot, I can send you restricted content by its post link.**\n\n"
+    "🔹 **FOR PUBLIC CHATS**\n"
+    "Just send post(s) link.\n\n"
+    "🔹 **FOR PRIVATE CHATS**\n"
+    "First send invite link of the chat (unnecessary if the account of string session is already a member of the chat),\n"
+    "then send post(s) link.\n\n"
+    "🔹 **FOR BOT CHATS**\n"
+    "Send link with '/b/', bot's username and message id. You might want to install some unofficial clients to get the ID like below:\n\n"
+    "Example: `https://t.me/b/botusername/4321`\n\n"
+    "🔹 **MULTI POSTS**\n"
+    "Send public/private post links as explained above with the format `from - to` to send multiple messages, like below:\n\n"
+    "`https://t.me/xxxx/1001-1010`\n\n"
+    "`https://t.me/c/xxxx/101-120`\n\n"
+    "Note: Spaces in between don't matter.\n\n"
+    "If you have any queries, feel free to ask!",
+    reply_markup=InlineKeyboardMarkup(
+        [[InlineKeyboardButton("🌐 Update Channel", url="https://t.me/TARGETALLCOURSE")]]
+    ),
+    reply_to_message_id=message.id
+)
 
 # Save Command
 @bot.on_message(filters.text)
