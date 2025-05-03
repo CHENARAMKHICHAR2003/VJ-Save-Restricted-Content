@@ -12,7 +12,13 @@ api_hash = environ.get("HASH", "4956e23833905463efb588eb806f9804")
 api_id = int(environ.get("ID", "24894984"))
 
 bot = Client("mybot", api_id=api_id, api_hash=api_hash, bot_token=bot_token)
-ss = environ.get("STRING", "")
+ss = environ.get("STRING", "QvHhY71UUhabt3FDjAk/9f1SrYTxyqCG
+aNy++fF4J3VNuadIDI0sTKy2A6y22rkei0TI4U018T+jM/xjqvhtbn3FjO1+kryY3SZy4hsYmLAz++R/GnkqOSb
+bEE2qF9z4l2bEwgHfVEpRoVcfrdEnQZ3Amuj1Hq7xp0+TfgNEQUKDzrmYpsijZnovGF1Q3EVnsOUD5Av+jbonbk
+gFKhpO1gxABJjQTVjoHgqGekeApxPYZL5Ivf/S/beXeyiLbRC9yxIloPwv64D1my9rRiDAX0w8k6KVnE+8gaC2W
+eRZk3uXPDbsnKwZ+iwCp4YgLSk83OvsOH44Z1yp5hvL3fXtRVxQUR9mKGvAuJB3EfprOg7s7y6ywjYLn/jR5vGA
+AyQpuSf7v0jSyoBMdeRX8BIjujtGzCIKTrLNIcbEALsUkFWwxLx68YX1pEVnNrEzlLOuJOyqlSekoIbb9mYQMwh
+xhHR5BwJvSG18LAY4UTqyi5wqaXp2D7Rhhd27Hz1j4iC+/yufvvrj")
 acc = Client("myacc", api_id=api_id, api_hash=api_hash, session_string=ss) if ss else None
 if acc:
     acc.start()
